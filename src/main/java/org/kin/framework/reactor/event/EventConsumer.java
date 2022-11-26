@@ -5,6 +5,7 @@ import org.kin.framework.event.EventHandler;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 
+import java.util.EventListener;
 import java.util.Objects;
 
 /**
@@ -13,7 +14,7 @@ import java.util.Objects;
  * @author huangjianqin
  * @date 2022/11/26
  */
-public interface EventConsumer<E> extends Ordered {
+public interface EventConsumer<E> extends EventListener, Ordered {
     /**
      * 事件消费逻辑实现
      *

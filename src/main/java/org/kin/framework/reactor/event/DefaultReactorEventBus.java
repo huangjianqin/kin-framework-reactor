@@ -3,6 +3,7 @@ package org.kin.framework.reactor.event;
 import com.google.common.base.Preconditions;
 import org.jctools.maps.NonBlockingHashMap;
 import org.kin.framework.event.EventFunction;
+import org.kin.framework.event.EventListener;
 import org.kin.framework.event.EventMerge;
 import org.kin.framework.proxy.MethodDefinition;
 import org.kin.framework.proxy.ProxyInvoker;
@@ -142,6 +143,10 @@ public final class DefaultReactorEventBus implements ReactorEventBus {
      */
     private void parseEventFuncAndRegister(Object obj) {
         Class<?> claxx = obj.getClass();
+
+        if(!claxx.isAnnotationPresent(EventListener.class)){
+            throw new IllegalArgumentException(String.format("%s must be annotated with @%s", obj.getClass(), EventListener.class.getSimpleName()));
+        }
 
         //注解在方法
         //在所有  public & 有注解的  方法中寻找一个匹配的方法作为事件处理方法

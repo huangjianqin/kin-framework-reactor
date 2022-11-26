@@ -1,10 +1,7 @@
 package org.kin.framework.reactor.event;
 
 import org.kin.framework.common.Ordered;
-import org.kin.framework.event.DefaultEventBus;
-import org.kin.framework.event.EventFunction;
-import org.kin.framework.event.EventMerge;
-import org.kin.framework.event.MergeType;
+import org.kin.framework.event.*;
 import reactor.core.publisher.Flux;
 
 import java.time.Duration;
@@ -16,6 +13,7 @@ import java.util.concurrent.TimeUnit;
  * @author huangjianqin
  * @date 2022/11/26
  */
+@EventListener
 public class ReactorEventBusTest {
     public static void main(String[] args) throws InterruptedException {
         ReactorEventBus eventBus = new DefaultReactorEventBus();
