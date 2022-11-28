@@ -25,6 +25,7 @@ import java.time.Duration;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -55,7 +56,14 @@ public final class DefaultReactorEventBus implements ReactorEventBus {
 
     public DefaultReactorEventBus(boolean isEnhance) {
         this(isEnhance, Schedulers.boundedElastic());
+    }
 
+    public DefaultReactorEventBus(boolean isEnhance, ExecutorService executorService) {
+        this(isEnhance, Schedulers.fromExecutorService(executorService));
+    }
+
+    public DefaultReactorEventBus(boolean isEnhance, ExecutorService executorService, String executorName) {
+        this(isEnhance, Schedulers.fromExecutorService(executorService, executorName));
     }
 
     @SuppressWarnings("unchecked")
@@ -70,8 +78,7 @@ public final class DefaultReactorEventBus implements ReactorEventBus {
                         EventConsumer consumer = event2Consumer.get(event.getClass());
                         if (Objects.nonNull(consumer)) {
                             consumer.consume(this, event);
-                        }
-                        else{
+                        } else {
                             log.warn("can not find event consumer for event '{}'", event);
                         }
                     } catch (Exception e) {
@@ -144,7 +151,7 @@ public final class DefaultReactorEventBus implements ReactorEventBus {
     private void parseEventFuncAndRegister(Object obj) {
         Class<?> claxx = obj.getClass();
 
-        if(!claxx.isAnnotationPresent(EventListener.class)){
+        if (!claxx.isAnnotationPresent(EventListener.class)) {
             throw new IllegalArgumentException(String.format("%s must be annotated with @%s", obj.getClass(), EventListener.class.getSimpleName()));
         }
 
@@ -269,7 +276,7 @@ public final class DefaultReactorEventBus implements ReactorEventBus {
 
     @Override
     public void dispose() {
-        if(isDisposed()){
+        if (isDisposed()) {
             return;
         }
         stopped = true;
