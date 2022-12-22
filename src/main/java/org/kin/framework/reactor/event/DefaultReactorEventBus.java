@@ -8,6 +8,7 @@ import org.kin.framework.event.EventMerge;
 import org.kin.framework.proxy.MethodDefinition;
 import org.kin.framework.proxy.ProxyInvoker;
 import org.kin.framework.proxy.Proxys;
+import org.kin.framework.reactor.utils.RetryNonSerializedEmitFailureHandler;
 import org.kin.framework.utils.ClassUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,11 +37,11 @@ import java.util.concurrent.TimeUnit;
  * @date 2022/11/26
  */
 @SuppressWarnings("rawtypes")
-public final class DefaultReactorEventBus implements ReactorEventBus {
+public class DefaultReactorEventBus implements ReactorEventBus {
     private static final Logger log = LoggerFactory.getLogger(DefaultReactorEventBus.class);
 
     /** event池 */
-    private final Sinks.Many<Object> eventSink = Sinks.many().multicast().directBestEffort();
+    private final Sinks.Many<Object> eventSink = Sinks.many().unicast().onBackpressureBuffer();
     /** key -> event class, value -> event consumer */
     private final Map<Class<?>, EventConsumer> event2Consumer = new NonBlockingHashMap<>();
     /** 是否使用字节码增强技术 */
@@ -250,11 +251,7 @@ public final class DefaultReactorEventBus implements ReactorEventBus {
 
     @Override
     public void post(Object event) {
-        eventSink.emitNext(event, (signalType, emitResult) -> {
-            //重试则事件触发顺序乱了, 会有问题
-            log.error("event dropped, signalType={}, emitResult={}, event={}", signalType, emitResult, event);
-            return false;
-        });
+        eventSink.emitNext(event, RetryNonSerializedEmitFailureHandler.RETRY_NON_SERIALIZED);
     }
 
     @Override

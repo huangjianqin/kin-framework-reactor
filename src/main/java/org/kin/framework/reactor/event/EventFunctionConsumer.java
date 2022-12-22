@@ -12,7 +12,7 @@ import org.kin.framework.utils.ExceptionUtils;
  * @author huangjianqin
  * @date 2022/11/26
  */
-final class EventFunctionConsumer <T> implements EventConsumer<T> {
+class EventFunctionConsumer <T> implements EventConsumer<T> {
     /** {@link EventFunction} 注解方法代理类 */
     private final ProxyInvoker<?> invoker;
     /** {@link ReactorEventBus} 参数位置, 默认没有 */

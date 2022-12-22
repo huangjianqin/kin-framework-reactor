@@ -13,7 +13,7 @@ import java.util.List;
  * @author huangjianqin
  * @date 2022/11/26
  */
-final class MultiEventConsumers<E> implements EventConsumer<E> {
+class MultiEventConsumers<E> implements EventConsumer<E> {
     private static final Logger log = LoggerFactory.getLogger(MultiEventConsumers.class);
 
     /** {@link EventConsumer}实现类集合 */

@@ -17,7 +17,7 @@ import java.util.Objects;
  * @date 2022/11/26
  */
 @SuppressWarnings("rawtypes")
-final class MergedEventConsumer<E> implements EventConsumer<E> {
+class MergedEventConsumer<E> implements EventConsumer<E> {
     private static final Logger log = LoggerFactory.getLogger(MergedEventConsumer.class);
 
     /** 事件类型 */
