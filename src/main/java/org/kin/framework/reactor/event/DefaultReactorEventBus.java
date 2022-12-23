@@ -80,7 +80,7 @@ public class DefaultReactorEventBus implements ReactorEventBus {
                         if (Objects.nonNull(consumer)) {
                             consumer.consume(this, event);
                         } else {
-                            log.warn("can not find event consumer for event '{}'", event);
+                            log.warn("can not find event consumer for event '{}'", event.getClass().getSimpleName());
                         }
                     } catch (Exception e) {
                         log.error("event consumer consume event '{}' error {}", event, e);
