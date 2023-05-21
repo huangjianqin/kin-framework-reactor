@@ -13,6 +13,7 @@ import org.kin.framework.utils.ClassUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.Disposable;
+import reactor.core.Disposables;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
@@ -83,7 +84,7 @@ public class DefaultReactorEventBus implements ReactorEventBus {
                             log.warn("can not find event consumer for event '{}'", event.getClass().getSimpleName());
                         }
                     } catch (Exception e) {
-                        log.error("event consumer consume event '{}' error {}", event, e);
+                        log.error("event consumer consume event '{}' error", event, e);
                     }
                 }, t -> log.error("event sink subscribe error, ", t));
     }
@@ -246,16 +247,28 @@ public class DefaultReactorEventBus implements ReactorEventBus {
 
     @Override
     public void post(Runnable task) {
+        if(isDisposed()){
+            log.warn("reactor event bus receive runnable task when it has been disposed, {}", task);
+            return;
+        }
         scheduler.schedule(task);
     }
 
     @Override
     public void post(Object event) {
+        if(isDisposed()){
+            log.warn("reactor event bus receive event when it has been disposed, {}", event);
+            return;
+        }
         eventSink.emitNext(event, RetryNonSerializedEmitFailureHandler.RETRY_NON_SERIALIZED);
     }
 
     @Override
     public Disposable schedule(Object event, long delay, TimeUnit unit) {
+        if(isDisposed()){
+            log.warn("reactor event bus receive event when it has been disposed, {}", event);
+            return Disposables.disposed();
+        }
         return Mono.just(event)
                 .delayElement(Duration.ofMillis(unit.toMillis(delay)), scheduler)
                 .subscribe(this::post);
@@ -263,6 +276,10 @@ public class DefaultReactorEventBus implements ReactorEventBus {
 
     @Override
     public Disposable scheduleAtFixRate(Object event, long initialDelay, long period, TimeUnit unit) {
+        if(isDisposed()){
+            log.warn("reactor event bus receive event when it has been disposed, {}", event);
+            return Disposables.disposed();
+        }
         return Flux.interval(Duration.ofMillis(unit.toMillis(initialDelay)), Duration.ofMillis(unit.toMillis(period)),
                         scheduler)
                 //转换成event
