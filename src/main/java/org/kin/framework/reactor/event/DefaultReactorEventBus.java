@@ -69,7 +69,11 @@ public class DefaultReactorEventBus implements ReactorEventBus {
     }
 
     public static DefaultReactorEventBus create(String name, int parallelism, boolean daemon) {
-        return new DefaultReactorEventBus(Schedulers.newParallel(name, parallelism, daemon));
+        return create(Schedulers.newParallel(name, parallelism, daemon));
+    }
+
+    public static DefaultReactorEventBus create(Scheduler scheduler) {
+        return new DefaultReactorEventBus(scheduler);
     }
 
     @SuppressWarnings("unchecked")
