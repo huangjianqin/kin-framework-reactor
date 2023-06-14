@@ -10,6 +10,7 @@ import org.kin.framework.proxy.ProxyInvoker;
 import org.kin.framework.proxy.Proxys;
 import org.kin.framework.reactor.utils.RetryNonSerializedEmitFailureHandler;
 import org.kin.framework.utils.ClassUtils;
+import org.kin.framework.utils.SysUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.Disposable;
@@ -27,7 +28,6 @@ import java.time.Duration;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -40,37 +40,40 @@ import java.util.concurrent.TimeUnit;
 @SuppressWarnings("rawtypes")
 public class DefaultReactorEventBus implements ReactorEventBus {
     private static final Logger log = LoggerFactory.getLogger(DefaultReactorEventBus.class);
+    /** 默认worker name */
+    private static final String DEFAULT_WORKER_NAME = "defaultReactorEventBus";
 
     /** event池 */
     private final Sinks.Many<Object> eventSink = Sinks.many().unicast().onBackpressureBuffer();
     /** key -> event class, value -> event consumer */
     private final Map<Class<?>, EventConsumer> event2Consumer = new NonBlockingHashMap<>();
-    /** 是否使用字节码增强技术 */
-    private final boolean isEnhance;
     /** 调度线程 */
     private final Scheduler scheduler;
-
+    /** event bus是否已stopped */
     private volatile boolean stopped;
 
-    public DefaultReactorEventBus() {
-        this(false);
+    public static DefaultReactorEventBus create() {
+        return create(DEFAULT_WORKER_NAME, SysUtils.CPU_NUM, false);
     }
 
-    public DefaultReactorEventBus(boolean isEnhance) {
-        this(isEnhance, Schedulers.boundedElastic());
+    public static DefaultReactorEventBus create(int parallelism) {
+        return create(DEFAULT_WORKER_NAME, parallelism, false);
     }
 
-    public DefaultReactorEventBus(boolean isEnhance, ExecutorService executorService) {
-        this(isEnhance, Schedulers.fromExecutorService(executorService));
+    public static DefaultReactorEventBus create(String name, int parallelism) {
+        return create(name, parallelism, false);
     }
 
-    public DefaultReactorEventBus(boolean isEnhance, ExecutorService executorService, String executorName) {
-        this(isEnhance, Schedulers.fromExecutorService(executorService, executorName));
+    public static DefaultReactorEventBus create(int parallelism, boolean daemon) {
+        return create(DEFAULT_WORKER_NAME, parallelism, daemon);
+    }
+
+    public static DefaultReactorEventBus create(String name, int parallelism, boolean daemon) {
+        return new DefaultReactorEventBus(Schedulers.newParallel(name, parallelism, daemon));
     }
 
     @SuppressWarnings("unchecked")
-    public DefaultReactorEventBus(boolean isEnhance, Scheduler scheduler) {
-        this.isEnhance = isEnhance;
+    private DefaultReactorEventBus(Scheduler scheduler) {
         this.scheduler = scheduler;
 
         eventSink.asFlux()
@@ -116,6 +119,7 @@ public class DefaultReactorEventBus implements ReactorEventBus {
     /**
      * 注册{@link EventConsumer}, 该consumer可能支持事件合并
      */
+    @SuppressWarnings("unchecked")
     private void registerEventConsumer(Class<?> eventType, EventConsumer eventConsumer, EventMerge eventMerge) {
         if (Objects.isNull(eventMerge)) {
             //不支持事件合并
@@ -237,17 +241,12 @@ public class DefaultReactorEventBus implements ReactorEventBus {
      * @return {@link EventFunction} 注解方法代理类
      */
     private ProxyInvoker<?> generateEventFuncMethodInvoker(Object obj, Method method) {
-        MethodDefinition<Object> methodDefinition = new MethodDefinition<>(obj, method);
-        if (isEnhance) {
-            return Proxys.byteBuddy().enhanceMethod(methodDefinition);
-        } else {
-            return Proxys.reflection().enhanceMethod(methodDefinition);
-        }
+        return Proxys.adaptive().enhanceMethod(new MethodDefinition<>(obj, method));
     }
 
     @Override
     public void post(Runnable task) {
-        if(isDisposed()){
+        if (isDisposed()) {
             log.warn("reactor event bus receive runnable task when it has been disposed, {}", task);
             return;
         }
@@ -256,7 +255,7 @@ public class DefaultReactorEventBus implements ReactorEventBus {
 
     @Override
     public void post(Object event) {
-        if(isDisposed()){
+        if (isDisposed()) {
             log.warn("reactor event bus receive event when it has been disposed, {}", event);
             return;
         }
@@ -265,7 +264,7 @@ public class DefaultReactorEventBus implements ReactorEventBus {
 
     @Override
     public Disposable schedule(Object event, long delay, TimeUnit unit) {
-        if(isDisposed()){
+        if (isDisposed()) {
             log.warn("reactor event bus receive event when it has been disposed, {}", event);
             return Disposables.disposed();
         }
@@ -276,7 +275,7 @@ public class DefaultReactorEventBus implements ReactorEventBus {
 
     @Override
     public Disposable scheduleAtFixRate(Object event, long initialDelay, long period, TimeUnit unit) {
-        if(isDisposed()){
+        if (isDisposed()) {
             log.warn("reactor event bus receive event when it has been disposed, {}", event);
             return Disposables.disposed();
         }

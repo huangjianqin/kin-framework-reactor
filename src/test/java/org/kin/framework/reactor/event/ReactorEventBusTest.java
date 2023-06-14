@@ -16,7 +16,7 @@ import java.util.concurrent.TimeUnit;
 @EventListener
 public class ReactorEventBusTest {
     public static void main(String[] args) throws InterruptedException {
-        ReactorEventBus eventBus = new DefaultReactorEventBus();
+        ReactorEventBus eventBus = DefaultReactorEventBus.create();
         eventBus.register(new ReactorEventBusTest());
         eventBus.register(new FirstEventConsumer());
 
